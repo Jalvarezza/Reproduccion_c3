@@ -1,0 +1,8 @@
+services:
+  reproduccion-svc:
+    build: .
+    image: duoc/caso03-reproduccion:1.0.0
+    container_name: caso03-reproduccion-svc
+    ports:
+      - "${PORT:-8080}:8080"
+    restart: unless-stopped

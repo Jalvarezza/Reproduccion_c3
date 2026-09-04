@@ -62,3 +62,5 @@ docker compose up --build
 mvn test      # unit tests + Cucumber
 mvn verify    # + verificaci√≥n de cobertura JaCoCo (100% LINE, falla si baja)
 ```
+
+<!-- CorrecciÛn de puntero nulo en reproducciones -->

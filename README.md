@@ -68,3 +68,5 @@ mvn verify    # + verificaci√≥n de cobertura JaCoCo (100% LINE, falla si baja)
 <!-- IntegraciÛn de mÈtricas de uso -->
 
 <!-- IntegraciÛn de mÈtricas de uso -->
+
+<!-- Integracion de metricas de uso -->

@@ -66,3 +66,5 @@ mvn verify    # + verificaci√≥n de cobertura JaCoCo (100% LINE, falla si baja)
 <!-- CorrecciÛn de puntero nulo en reproducciones -->
 
 <!-- Parche de correcciÛn r·pida -->
+
+<!-- Parche de correccion rapida -->

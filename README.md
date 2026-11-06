@@ -10,6 +10,31 @@ El servicio administra la información y la lógica asociada al dominio de **Rep
 | Calidad | JaCoCo cobertura LINE 100% · Cucumber (BDD) alineado a endpoints REST |
 | Entrega | Docker / Docker Compose |
 
+---
+
+## ðŸš€ Estrategia DevOps y GestiÃ³n del Repositorio
+
+### 1. Estrategia de Branching: GitFlow (IE1)
+Se selecciona **GitFlow** como estrategia de control de versiones debido a que el proyecto requiere un ciclo de vida estructurado con aislamiento total de nuevas funcionalidades (`feature/`), integraciÃ³n continua activa (`develop`), entregas estables a producciÃ³n (`main`) y resoluciÃ³n rÃ¡pida de incidentes en producciÃ³n (`hotfix/`) sin interferir con el desarrollo en marcha.
+
+### 2. ConvenciÃ³n de Ramas y Commits (IE5)
+* **Naming de Ramas:**
+  * `main`: CÃ³digo estable de producciÃ³n.
+  * `develop`: Base para integraciÃ³n continua.
+  * `feature/<nombre>`: Nuevas caracterÃ­sticas (ej. `feature/add-logging`).
+  * `hotfix/<nombre>`: Parches crÃ­ticos desde main (ej. `hotfix/fix-null-pointer`).
+* **Conventional Commits:** Formato obligatorio `<tipo>(<alcance>): <descripciÃ³n>`
+  * `feat`: Nuevas funcionalidades.
+  * `fix`: Correcciones de errores.
+  * `docs`: Cambios en documentaciÃ³n.
+  * `chore`: ConfiguraciÃ³n o mantenimiento.
+
+### 3. Flujo de Merge y Code Review (IE2)
+* NingÃºn cambio entra directamente a `main` o `develop`.
+* Todo cambio se integra mediante **Pull Request (PR)** requiriendo al menos 1 revisiÃ³n/aprobaciÃ³n por un par.
+
+---
+
 ## Responsabilidad del microservicio (SRP)
 
 Este microservicio administra exclusivamente los datos y la lógica correspondiente al dominio de Reproducción de StreamVerse, respetando el **Principio de Responsabilidad Única (SRP)**.
@@ -78,7 +103,7 @@ La documentacion completa esta en la carpeta [`docs/`](docs/):
 ## Como ejecutar localmente
 ```bash
 mvn spring-boot:run
-```
+<!-- prueba de comentario loggin added-->
 
 ## Como ejecutar con Docker
 
@@ -91,7 +116,7 @@ docker compose up --build
 
 ```bash
 mvn test      # unit tests + Cucumber
-mvn verify    # + verificación de cobertura JaCoCo (100% LINE, falla si baja)
+mvn verify    # + verificaciÃ³n de cobertura JaCoCo (100% LINE, falla si baja)
 ```
 
 <!-- Historial de integración: Registro de auditoría, trazabilidad de cambios y parches aplicados -->

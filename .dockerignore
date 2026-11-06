@@ -3,3 +3,8 @@ target/
 .idea/
 .vscode/
 *.iml
+.git
+.gitignore
+.github
+Dockerfile
+docker-compose.yml

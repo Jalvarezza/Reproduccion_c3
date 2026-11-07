@@ -146,3 +146,235 @@ Creo que lo principal que me llevo de este trabajo es entender que desarrollar s
 Firmado:  
 Pamela Albanese — Estudiante de Ingeniería DevOps  
 Fecha: 05-09-2026
+
+
+---
+
+# Evaluación Parcial N°2 — Pipeline CI/CD
+
+## 1. Integración continua con GitHub Actions
+
+El pipeline se encuentra configurado en `.github/workflows/ci.yml`.
+
+Se ejecuta automáticamente cuando se realiza un push a `develop` o `main`, y cuando se crea o actualiza un Pull Request hacia estas ramas.
+
+### Etapas del pipeline
+
+1. **Preparación:** descarga el código y configura Java 21 con Maven.
+2. **Pruebas:** ejecuta las pruebas automatizadas y verifica la cobertura con JaCoCo.
+3. **Análisis de calidad:** ejecuta SonarQube Cloud y comprueba el Quality Gate.
+4. **Construcción Docker:** construye una imagen identificada con el SHA del commit.
+5. **Despliegue simulado:** levanta el microservicio mediante Docker Compose.
+6. **Verificación:** comprueba que el contenedor alcance un estado saludable.
+
+### Diagrama del pipeline CI/CD
+
+```mermaid
+flowchart TD
+    A["Push o Pull Request"] --> B["GitHub Actions"]
+    B --> C["Configurar Java 21 y Maven"]
+    C --> D["Pruebas JUnit y cobertura JaCoCo"]
+    D --> E{"¿Pruebas y cobertura aprobadas?"}
+    E -->|No| F["Pipeline detenido"]
+    E -->|Sí| G["Análisis SonarQube Cloud"]
+    G --> H{"¿Quality Gate aprobado?"}
+    H -->|No| F
+    H -->|Sí| I["Construir imagen Docker con SHA"]
+    I --> J["Desplegar con Docker Compose"]
+    J --> K{"¿Healthcheck saludable?"}
+    K -->|No| F
+    K -->|Sí| L["Pipeline completado"]
+```
+
+---
+
+## 2. Contenedores Docker
+
+El proyecto utiliza un `Dockerfile` multi-stage, que separa la compilación y la ejecución del microservicio.
+
+- **Primera etapa:** utiliza Maven y Java 21 para compilar la aplicación.
+- **Segunda etapa:** utiliza una imagen Java 21 JRE basada en Alpine para ejecutar el archivo JAR.
+- **Seguridad:** ejecuta la aplicación con un usuario sin privilegios (`appuser`).
+- **Puerto:** expone el puerto 8080.
+
+La imagen se construye automáticamente desde GitHub Actions, utilizando el SHA del commit para identificar la versión generada.
+
+---
+
+## 3. Pruebas automatizadas
+
+El microservicio utiliza pruebas automatizadas con JUnit y Maven.
+
+El pipeline ejecuta el siguiente comando:
+
+```bash
+mvn -B clean verify
+```
+
+Este comando permite ejecutar las pruebas, generar el reporte de JaCoCo y verificar la cobertura mínima configurada.
+
+### Resultados verificados
+
+- 20 pruebas ejecutadas correctamente.
+- Cobertura de líneas del 100 % en las clases incluidas en la verificación de JaCoCo.
+- Reporte de cobertura disponible en `target/site/jacoco/jacoco.xml`.
+
+Si una prueba falla o no se cumple la cobertura mínima, el pipeline se detiene y no continúa con las siguientes etapas.
+
+---
+
+## 4. Seguridad y calidad del código
+
+### SonarQube Cloud
+
+Se integró SonarQube Cloud al pipeline para analizar el código y verificar el cumplimiento del Quality Gate.
+
+La integración utiliza:
+
+- El secreto `SONAR_TOKEN` configurado en GitHub.
+- El análisis mediante Maven.
+- El reporte de cobertura generado por JaCoCo.
+- La opción `-Dsonar.qualitygate.wait=true`.
+
+Esta última configuración permite que GitHub Actions espere el resultado del Quality Gate.
+
+Si el análisis falla o el Quality Gate no se aprueba, el pipeline se detiene antes de construir y desplegar la imagen Docker.
+
+En la ejecución verificada se obtuvo el resultado:
+
+`QUALITY GATE STATUS: PASSED`
+
+### Dependabot
+
+Se configuró `.github/dependabot.yml` para revisar semanalmente las actualizaciones de dependencias.
+
+La configuración incluye:
+
+- **Maven:** revisión de dependencias del proyecto.
+- **GitHub Actions:** revisión de versiones de las acciones utilizadas en el pipeline.
+
+Ambas revisiones están programadas con frecuencia semanal (`weekly`).
+
+### Política de bloqueo
+
+El pipeline impide continuar con la construcción y el despliegue cuando:
+
+- Fallan las pruebas automatizadas.
+- No se cumple la cobertura mínima configurada.
+- Falla el análisis de SonarQube o su Quality Gate.
+
+---
+
+## 5. Despliegue automatizado y trazabilidad
+
+El despliegue se ejecuta automáticamente después de superar las verificaciones de pruebas y calidad.
+
+### Construcción de la imagen
+
+GitHub Actions construye una imagen Docker utilizando el SHA del commit:
+
+```bash
+docker build -t duoc/caso03-reproduccion:${GITHUB_SHA} .
+```
+
+Esto permite relacionar la imagen construida con una versión específica del código.
+
+### Despliegue simulado
+
+La imagen construida recibe también la etiqueta utilizada por Docker Compose:
+
+```bash
+docker tag duoc/caso03-reproduccion:${GITHUB_SHA} duoc/caso03-reproduccion:1.0.0
+```
+
+Posteriormente, se ejecuta:
+
+```bash
+docker compose up -d --no-build
+```
+
+El parámetro `--no-build` permite utilizar la imagen ya construida, evitando generar otra durante el despliegue.
+
+### Verificación del despliegue
+
+El pipeline revisa el estado del contenedor mediante su healthcheck.
+
+Si el servicio alcanza el estado `healthy`, la verificación se completa correctamente.
+
+Si el servicio presenta errores o no alcanza el estado saludable dentro del tiempo establecido, el pipeline falla.
+
+### Trazabilidad
+
+Los cambios y resultados pueden consultarse mediante:
+
+- Historial de commits y Pull Requests.
+- Ejecuciones de GitHub Actions.
+- Resultados de las pruebas y análisis de calidad.
+- Identificación de la imagen Docker mediante el SHA del commit.
+- Registros del despliegue simulado.
+
+**Importante:** el despliegue se realiza en el entorno temporal de GitHub Actions y no corresponde a un despliegue permanente en producción.
+
+---
+
+## 6. Orquestación con Docker Compose
+
+Se utiliza `docker-compose.yml` para configurar y ejecutar el microservicio en un contenedor.
+
+La configuración incorpora:
+
+- Exposición del puerto 8080.
+- Límites y reservas de recursos.
+- Política de reinicio `unless-stopped`.
+- Healthcheck para verificar el estado de la aplicación.
+- Ejecución del servicio mediante una imagen Docker.
+
+### Recursos configurados
+
+| Recurso | Reserva | Límite |
+|---------|---------|--------|
+| CPU | 0.25 | 0.75 |
+| Memoria | 256 MB | 512 MB |
+
+### Healthcheck
+
+El servicio utiliza una comprobación de salud con los siguientes parámetros:
+
+- Intervalo: 30 segundos.
+- Tiempo máximo de respuesta: 5 segundos.
+- Reintentos: 3.
+- Período inicial de espera: 40 segundos.
+
+La configuración permite comprobar el funcionamiento del microservicio durante el despliegue simulado.
+
+Actualmente se utiliza una instancia del contenedor, con límites de recursos definidos.
+
+---
+
+## 7. Verificación del pipeline
+
+Durante las pruebas de integración se verificó:
+
+- Ejecución correcta de las pruebas automatizadas.
+- Generación y validación de cobertura JaCoCo.
+- Análisis de SonarQube Cloud aprobado.
+- Construcción de la imagen Docker.
+- Despliegue simulado con Docker Compose.
+- Verificación satisfactoria del healthcheck.
+- Ejecución completa de GitHub Actions con resultado exitoso.
+
+Las evidencias de ejecución se encuentran en la pestaña **Actions** del repositorio.
+
+---
+
+## 8. Declaración de uso de IA
+
+Durante esta evaluación utilizamos ChatGPT como apoyo para aclarar dudas, comprender algunos conceptos, revisar configuraciones y mejorar la documentación. También nos ayudó a proponer soluciones técnicas, que posteriormente revisamos y verificamos en el proyecto, además de permitirnos profundizar nuestro aprendizaje a través de la interacción.
+
+---
+
+## 9. Reflexiones individuales - PAMELA ALBANESE - 06/11/2026
+
+Sigo manteniendo mi postura de la evaluación anterior, pero esta vez agregaría que me parece impresionante darme cuenta de cómo acciones que pueden parecer tan pequeñas son capaces de prevenir grandes problemas que podrían presentarse en un entorno de producción.
+
+También destaco el trabajo en equipo y la coordinación que logramos mantener durante esta evaluación, considerando que ambos tenemos responsabilidades y situaciones personales fuera del ámbito académico que debemos compatibilizar con nuestros estudios.

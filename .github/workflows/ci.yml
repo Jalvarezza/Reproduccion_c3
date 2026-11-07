@@ -27,3 +27,8 @@ jobs:
 
       - name: Compilar y verificar cobertura con JaCoCo
         run: mvn clean verify
+
+      
+      - name: Construir imagen Docker
+        run: docker build -t reproduccion-svc:${{ github.sha }} .
+  

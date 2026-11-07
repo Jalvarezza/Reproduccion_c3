@@ -10,6 +10,10 @@ on:
       - develop
       - main
 
+permissions:
+  contents: read
+  pull-requests: read      
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -17,6 +21,8 @@ jobs:
     steps:
       - name: Checkout del codigo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Configurar JDK 21 LTS
         uses: actions/setup-java@v4
@@ -26,4 +32,46 @@ jobs:
           cache: 'maven'
 
       - name: Compilar y verificar cobertura con JaCoCo
-        run: mvn clean verify
+        run: mvn -B clean verify
+
+      - name: Analizar codigo con SonarQube Cloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          -Dsonar.host.url=https://sonarcloud.io
+          -Dsonar.qualitygate.wait=true
+      
+      - name: Construir imagen Docker
+        run: docker build -t duoc/caso03-reproduccion:${{ github.sha }} .
+  
+      - name: Levantar microservicio con Docker Compose
+        run: |
+          docker tag duoc/caso03-reproduccion:${{ github.sha }} duoc/caso03-reproduccion:1.0.0
+          docker compose up -d --no-build
+      
+      - name: Verificar estado del microservicio
+        run: |
+          for i in {1..12}; do
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' caso03-reproduccion-svc)
+
+            if [ "$STATUS" = "healthy" ]; then
+              echo "Microservicio funcionando correctamente"
+              exit 0
+            fi
+
+            if [ "$STATUS" = "unhealthy" ]; then
+              echo "El microservicio no está saludable"
+              docker compose logs
+              exit 1
+            fi
+
+            echo "Esperando inicio del microservicio..."
+            sleep 10
+          done
+
+          echo "Tiempo de espera agotado"
+          docker compose logs
+          exit 1
+ 

@@ -50,6 +50,7 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
+          kubectl config set-cluster default --insecure-skip-tls-verify=true
 
       - name: Deploy manifests to k3s cluster
         run: |

@@ -32,7 +32,7 @@ jobs:
           cache: 'maven'
 
       - name: Compilar y verificar cobertura con JaCoCo
-        run: mvn -B clean verify
+        run: mvn -B -s .mvn/settings.xml clean verify
 
       - name: Analizar codigo con SonarQube Cloud
         env:

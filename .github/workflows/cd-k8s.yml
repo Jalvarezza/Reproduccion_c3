@@ -1,0 +1,65 @@
+﻿name: CD - Build & Deploy to Kubernetes (k3s)
+
+on:
+  push:
+    branches:
+      - main
+      - feature/k8s-observability
+    paths:
+      - 'src/**'
+      - 'k8s/**'
+      - 'Dockerfile'
+      - 'pom.xml'
+      - '.github/workflows/cd-k8s.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-deploy:
+    name: Build Docker Image & Deploy to Azure k3s
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/jalvarezza/reproduccion-svc:latest
+            ghcr.io/jalvarezza/reproduccion-svc:${{ github.sha }}
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Deploy manifests to k3s cluster
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/configmap.yaml
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          kubectl rollout restart deployment/reproduccion-svc -n streamverse
+          kubectl rollout status deployment/reproduccion-svc -n streamverse --timeout=180s
+
+      - name: Verify deployed resources
+        run: |
+          kubectl get pods,svc -n streamverse -o wide

@@ -42,9 +42,6 @@ jobs:
             ghcr.io/jalvarezza/reproduccion-svc:latest
             ghcr.io/jalvarezza/reproduccion-svc:${{ github.sha }}
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@229c1983f3e6e44667754e82112a6c5d3f127700 # v4.0.0
-
       - name: Configure kubeconfig
         env:
           KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}

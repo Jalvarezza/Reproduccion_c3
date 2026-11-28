@@ -688,6 +688,41 @@ organizar la documentación.
 Las configuraciones fueron implementadas y verificadas
 mediante pruebas y ejecuciones en GitHub Actions.
 
+
+## 9. Evidencias de la Evaluación Parcial N°3
+
+### Observabilidad y monitoreo (IE1)
+
+- [EV01 - Métricas Actuator y Prometheus](docs/evidencias_E3/EV1-actuator-prometheus.png)
+- [EV02 - Estado de salud del microservicio](docs/evidencias_E3/EV2-actuator-health.png)
+
+### Seguridad y cumplimiento (IE5)
+
+- [EV03 - Quality Gate aprobado](docs/evidencias_E3/EV03-quality-gate-sonar.jpg.jpg)
+- [EV04 - Ejecución de Gitleaks y Trivy](docs/evidencias_E3/EV04-ejecucion-gitleaks-trivy.jpg.jpg)
+- [EV05 - Auditoría de seguridad aprobada](docs/evidencias_E3/EV05-auditoria-aprobada.jpg.jpg)
+- [EV12 - Validaciones obligatorias en main](docs/evidencias_E3/EV12-validaciones-obligatorias-main.jpg.jpg)
+- [EV17 - Bloqueo de actualización Dependabot](docs/evidencias_E3/EV17-dependabot-merge-bloqueado.jpg.jpg)
+- [EV18 - Configuración de protección de main](docs/evidencias_E3/EV18-configuracion-proteccion-main.png.jpeg)
+- [EV20 - Pull Request obligatorio](docs/evidencias_E3/EV20-main-pull-request-obligatorio.png.jpeg)
+
+### Validación del pipeline y controles de despliegue (IE6)
+
+- [EV06 - Pipeline inicial exitoso](docs/evidencias_E3/EV06-pipeline-inicial-exitoso.jpg.jpg)
+- [EV07 - Prueba de secreto ficticio](docs/evidencias_E3/EV07-prueba-secreto-ficticio.jpg.jpg)
+- [EV08 - Detección del secreto mediante Gitleaks](docs/evidencias_E3/EV08-gitleaks-secreto-detectado.jpg.jpg)
+- [EV09 - Bloqueo del pipeline](docs/evidencias_E3/EV09-bloqueo-pipeline.jpg.jpg)
+- [EV10 - Recuperación del pipeline](docs/evidencias_E3/EV10-recuperacion-pipeline.jpg.jpg)
+- [EV11 - Validaciones del PR hacia develop](docs/evidencias_E3/EV11-validaciones-PR-develop.jpg.jpg)
+- [EV13 - Espera de aprobación manual](docs/evidencias_E3/EV13-espera-aprobacion-produccion.jpg.jpg)
+- [EV14 - Pipeline CI/CD exitoso](docs/evidencias_E3/EV14-pipeline-CD-exitoso.jpg.jpg)
+- [EV19 - Configuración del entorno production](docs/evidencias_E3/EV19-configuracion-entorno-production.png.jpeg)
+
+### Despliegue en Kubernetes (IE2)
+
+- [EV15 - Rollout exitoso en Kubernetes](docs/evidencias_E3/EV15-rollout-kubernetes.jpg.jpg)
+- [EV16 - Verificación de pods y servicio](docs/evidencias_E3/EV16-verificacion-pods-servicio.jpg.jpg)
+
 ---
 
 ## 10. Reflexiones individuales

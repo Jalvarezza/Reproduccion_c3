@@ -12,26 +12,26 @@ El servicio administra la información y la lógica asociada al dominio de **Rep
 
 ---
 
-## ðŸš€ Estrategia DevOps y GestiÃ³n del Repositorio
+## 🚀 Estrategia DevOps y Gestión del Repositorio
 
 ### 1. Estrategia de Branching: GitFlow (IE1)
-Se selecciona **GitFlow** como estrategia de control de versiones debido a que el proyecto requiere un ciclo de vida estructurado con aislamiento total de nuevas funcionalidades (`feature/`), integraciÃ³n continua activa (`develop`), entregas estables a producciÃ³n (`main`) y resoluciÃ³n rÃ¡pida de incidentes en producciÃ³n (`hotfix/`) sin interferir con el desarrollo en marcha.
+Se selecciona **GitFlow** como estrategia de control de versiones debido a que el proyecto requiere un ciclo de vida estructurado con aislamiento total de nuevas funcionalidades (`feature/`), integración continua activa (`develop`), entregas estables a producción (`main`) y resolución rápida de incidentes en producción (`hotfix/`) sin interferir con el desarrollo en marcha.
 
-### 2. ConvenciÃ³n de Ramas y Commits (IE5)
+### 2. Convención de Ramas y Commits (IE5)
 * **Naming de Ramas:**
-  * `main`: CÃ³digo estable de producciÃ³n.
-  * `develop`: Base para integraciÃ³n continua.
-  * `feature/<nombre>`: Nuevas caracterÃ­sticas (ej. `feature/add-logging`).
-  * `hotfix/<nombre>`: Parches crÃ­ticos desde main (ej. `hotfix/fix-null-pointer`).
-* **Conventional Commits:** Formato obligatorio `<tipo>(<alcance>): <descripciÃ³n>`
+  * `main`: Código estable de producción.
+  * `develop`: Base para integración continua.
+  * `feature/<nombre>`: Nuevas características (ej. `feature/add-logging`).
+  * `hotfix/<nombre>`: Parches críticos desde main (ej. `hotfix/fix-null-pointer`).
+* **Conventional Commits:** Formato obligatorio `<tipo>(<alcance>): <descripción>`
   * `feat`: Nuevas funcionalidades.
   * `fix`: Correcciones de errores.
-  * `docs`: Cambios en documentaciÃ³n.
-  * `chore`: ConfiguraciÃ³n o mantenimiento.
+  * `docs`: Cambios en documentación.
+  * `chore`: Configuración o mantenimiento.
 
 ### 3. Flujo de Merge y Code Review (IE2)
-* NingÃºn cambio entra directamente a `main` o `develop`.
-* Todo cambio se integra mediante **Pull Request (PR)** requiriendo al menos 1 revisiÃ³n/aprobaciÃ³n por un par.
+* Ningún cambio entra directamente a `main` o `develop`.
+* Todo cambio se integra mediante **Pull Request (PR)** requiriendo al menos 1 revisión/aprobación por un par.
 
 ---
 
@@ -467,8 +467,11 @@ ejecuciones realizadas sobre la rama
 La prueba permitió comprobar que la detección de un secreto
 impide continuar con las etapas posteriores del CI.
 
-El bloqueo del despliegue en producción se encuentra
-configurado, pendiente de validación.
+La ejecución #69 de GitHub Actions en main validó el
+despliegue condicionado tras superar los controles y
+recibir la aprobación manual. La prueba del secreto
+ficticio verificó el bloqueo de las etapas posteriores
+del CI, no un intento de despliegue en main.
 
 ## 4. Protección de ramas y control de despliegue
 
@@ -503,8 +506,11 @@ La imagen publicada en GHCR se identifica mediante el SHA
 del commit validado y se utiliza para actualizar el
 microservicio en Kubernetes.
 
-La configuración está implementada. La aprobación manual
-y el despliegue final están pendientes de validación.
+La aprobación manual y el despliegue en producción
+fueron validados exitosamente en la ejecución #69
+de GitHub Actions, obteniendo un rollout exitoso
+en Kubernetes, con dos réplicas disponibles en
+estado Running y sin reinicios.
 
 ## 5. Instrumentación y observabilidad (IE1)
 
@@ -648,6 +654,7 @@ Pull Requests.
 | #16 | Kubernetes, Azure, Actuator, Prometheus y Grafana. |
 | #17 | Sincronización de main con develop. |
 | #18 | Auditoría de seguridad e integración de controles CI/CD. |
+| #19 | Integración final de develop a main y validación del despliegue mediante la ejecución #69. |
 
 ### Resultados de calidad
 

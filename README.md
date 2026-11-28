@@ -735,4 +735,10 @@ Una de las cosas que más destaco es que, durante el desarrollo de esta evaluaci
 
 Me quedo con la importancia de no considerar la seguridad como algo que se incorpora al finalizar un proyecto, sino como algo que debe estar presente durante todo su desarrollo. También destaco nuevamente el trabajo en equipo y la coordinación que logramos mantener durante las tres evaluaciones.
 
-### Reflexión personal - Jorge Alvarez
+### Reflexión personal - Jorge Alvarez - 28-11-2026
+Con el cierre de esta tercera evaluación siento que logré aterrizar en un entorno real todo el flujo de despliegue y operación de un microservicio. Haber montado la infraestructura desde cero en Azure con Kubernetes (k3s), configurando los puertos de red, los namespaces y el despliegue continuo desde GitHub Actions, me permitió entender cómo se conectan realmente el desarrollo del código con su puesta en marcha en la nube.
+
+Uno de los aprendizajes más valiosos estuvo en resolver los problemas técnicos que fueron apareciendo en el camino, desde ajustar dependencias y pruebas en el proyecto Java hasta asegurar que el Quality Gate de SonarCloud y los pipelines pasaran sin errores. Más allá de hacer que todo funcionara, ese proceso de depuración me sirvió para comprender cómo mantener la estabilidad y la calidad antes de que un cambio llegue al clúster.
+
+Finalmente, implementar la capa de observabilidad con Prometheus y Grafana me demostró lo clave que es monitorear una aplicación una vez desplegada, ya que permite ver en tiempo real su comportamiento y consumo de recursos. Destaco también la buena coordinación en equipo para dividir los bloques, apoyarnos con las configuraciones del repositorio y sacar adelante toda la evaluación de forma ordenada.
+

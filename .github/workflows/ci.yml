@@ -11,14 +11,13 @@ on:
       - develop
       - main
 
-permissions:
-  contents: read
-  pull-requests: read      
-
 jobs:
   security-audit:
     name: Auditoria de seguridad
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout del codigo
@@ -26,14 +25,35 @@ jobs:
 
       - name: Instalar Gitleaks
         run: |
-          curl -fsSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz -o gitleaks.tar.gz
-          tar -xzf gitleaks.tar.gz gitleaks
+          curl --proto '=https' --proto-redir '=https' -fsSL \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz \
+            -o gitleaks_8.24.3_linux_x64.tar.gz
+
+          curl --proto '=https' --proto-redir '=https' -fsSL \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_checksums.txt \
+            -o gitleaks_checksums.txt
+
+          grep 'gitleaks_8.24.3_linux_x64.tar.gz$' gitleaks_checksums.txt | sha256sum -c -
+
+          tar -xzf gitleaks_8.24.3_linux_x64.tar.gz gitleaks
           sudo install gitleaks /usr/local/bin/gitleaks
-          rm gitleaks.tar.gz gitleaks
+          rm gitleaks gitleaks_8.24.3_linux_x64.tar.gz gitleaks_checksums.txt
 
       - name: Instalar Trivy
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.69.3
+          curl --proto '=https' --proto-redir '=https' -fsSL \
+            https://github.com/aquasecurity/trivy/releases/download/v0.69.3/trivy_0.69.3_Linux-64bit.tar.gz \
+            -o trivy_0.69.3_Linux-64bit.tar.gz
+
+          curl --proto '=https' --proto-redir '=https' -fsSL \
+            https://github.com/aquasecurity/trivy/releases/download/v0.69.3/trivy_0.69.3_checksums.txt \
+            -o trivy_checksums.txt
+
+          grep 'trivy_0.69.3_Linux-64bit.tar.gz$' trivy_checksums.txt | sha256sum -c -
+
+          tar -xzf trivy_0.69.3_Linux-64bit.tar.gz trivy
+          sudo install trivy /usr/local/bin/trivy
+          rm trivy trivy_0.69.3_Linux-64bit.tar.gz trivy_checksums.txt
 
       - name: Ejecutar auditoria de seguridad
         run: bash audit/security-audit.sh
@@ -41,6 +61,10 @@ jobs:
   build-and-test:
     needs: security-audit
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: read
 
     steps:
       - name: Checkout del codigo
@@ -67,15 +91,15 @@ jobs:
           mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
           -Dsonar.host.url=https://sonarcloud.io
           -Dsonar.qualitygate.wait=true
-      
+
       - name: Construir imagen Docker
         run: docker build -t duoc/caso03-reproduccion:${{ github.sha }} .
-  
+
       - name: Levantar microservicio con Docker Compose
         run: |
           docker tag duoc/caso03-reproduccion:${{ github.sha }} duoc/caso03-reproduccion:1.0.0
           docker compose up -d --no-build
-      
+
       - name: Verificar estado del microservicio
         run: |
           for i in {1..12}; do
@@ -99,4 +123,14 @@ jobs:
           echo "Tiempo de espera agotado"
           docker compose logs
           exit 1
- 
+
+  deploy:
+    needs: [security-audit, build-and-test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: write
+
+    uses: ./.github/workflows/cd-k8s.yml
+    secrets: inherit

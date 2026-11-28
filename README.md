@@ -101,9 +101,10 @@ La documentacion completa esta en la carpeta [`docs/`](docs/):
 - [`docs/diagramas/`](docs/diagramas/)  C4 (contexto, contenedores, componentes), secuencia e infraestructura AWS Docker, Docker Compose e integración
 
 ## Como ejecutar localmente
+
 ```bash
 mvn spring-boot:run
-<!-- prueba de comentario loggin added-->
+```
 
 ## Como ejecutar con Docker
 
@@ -115,11 +116,9 @@ docker compose up --build
 ## Como ejecutar las pruebas
 
 ```bash
-mvn test      # unit tests + Cucumber
-mvn verify    # + verificaciÃ³n de cobertura JaCoCo (100% LINE, falla si baja)
+mvn test      # Pruebas unitarias y Cucumber
+mvn verify    # Verificación de cobertura JaCoCo
 ```
-
-<!-- Historial de integración: Registro de auditoría, trazabilidad de cambios y parches aplicados -->
 
 ---
 
@@ -384,3 +383,313 @@ También destaco el trabajo en equipo y la coordinación que logramos mantener d
 Enfrentar la entrega del microservicio `reproduccion-svc` me permitió consolidar el paso de la teoría a la práctica en un entorno DevOps real. El principal valor no estuvo solo en el código Java 21, sino en asegurar la infraestructura, la calidad y la automatización del despliegue.
 
 Resolver los conflictos de integración en GitFlow como el ajuste de codificación UTF-8 y la limpieza del `pom.xml` al fusionar `feature/docker-setup` con `develop` reafirmamos la importancia del control de versiones. Además, la creación del `Dockerfile` multietapa con usuario no-root (`appuser`) y la orquestación en `docker-compose.yml` me permitieron aplicar estándares profesionales de contenerización y seguridad.
+---
+
+# Evaluación Parcial N°3 — Observabilidad, seguridad y cumplimiento
+
+## 1. Pipeline CI/CD integrado
+
+Se incorporaron controles de seguridad al pipeline de la
+evaluación anterior, junto con el despliegue condicionado
+en Kubernetes (k3s) sobre Azure.
+
+### Diagrama del pipeline
+
+```mermaid
+flowchart TD
+    A[Push o Pull Request] --> B[Auditoria Gitleaks y Trivy]
+    B --> C{Auditoria aprobada?}
+    C -->|No| X[Pipeline detenido]
+    C -->|Si| D[Pruebas y cobertura JaCoCo]
+    D --> E{Pruebas aprobadas?}
+    E -->|No| X
+    E -->|Si| F{PR o push a main?}
+    F -->|Si| G[SonarCloud Quality Gate]
+    G --> H{Quality Gate aprobado?}
+    H -->|No| X
+    H -->|Si| I[Construccion Docker]
+    F -->|No| I
+    I --> J[Docker Compose y Healthcheck]
+    J --> K{Servicio saludable?}
+    K -->|No| X
+    K -->|Si| L{Push a main?}
+    L -->|No| M[CI completado sin despliegue]
+    L -->|Si| N[Aprobacion manual production]
+    N -->|Rechazada| X
+    N -->|Aprobada| O[Construccion y publicacion en GHCR]
+    O --> P[Despliegue en Kubernetes con SHA]
+    P --> Q[Verificacion de recursos y rollout]
+    Q --> R[Monitoreo Prometheus y Grafana]
+```
+## 2. Políticas de seguridad y cumplimiento
+
+| Política | Herramienta | Mecanismo de verificación |
+|---|---|---|
+| Protección del código fuente | GitHub Branch Protection | Pull Request y checks obligatorios en main. |
+| Prevención de exposición de secretos | Gitleaks | Bloqueo del pipeline al detectar secretos. |
+| Control de vulnerabilidades críticas | Trivy | Escaneo del sistema de archivos y bloqueo ante vulnerabilidades críticas detectadas. |
+| Calidad y seguridad del código | SonarQube Cloud | Quality Gate obligatorio en PR y main. |
+| Integridad de herramientas | SHA-256 y HTTPS | Verificación de archivos descargados antes de su instalación. |
+| Calidad de las pruebas | JUnit y JaCoCo | Ejecución de pruebas y validación de cobertura. |
+| Actualización de dependencias | Dependabot | Revisión semanal de dependencias. |
+| Control de despliegue | GitHub Environments | Aprobación manual en el entorno production. |
+| Trazabilidad de versiones | GitHub SHA y GHCR | Identificación de la imagen mediante el commit validado. |
+| Disponibilidad del servicio | Docker Healthcheck y Kubernetes | Verificación de salud y estado del despliegue. |
+| Observabilidad | Prometheus y Grafana | Recolección de métricas y visualización mediante dashboards. |
+
+## 3. Auditoría de seguridad automatizada
+
+Se incorporó el script `audit/security-audit.sh`, ejecutado
+automáticamente mediante GitHub Actions.
+
+- Gitleaks: detección de secretos expuestos.
+- Trivy: detección de vulnerabilidades críticas en el sistema de archivos.
+
+Si alguna herramienta devuelve un error, el pipeline se
+detiene y no continúa con las etapas posteriores.
+
+### Pruebas realizadas
+
+| Prueba | Resultado |
+|---|---|
+| Ejecución inicial de la auditoría | Aprobada |
+| Incorporación de un secreto ficticio | Detectado por Gitleaks |
+| Bloqueo de la auditoría | Exit code 1 |
+| Ejecución de build-and-test | Omitida (Skipped) |
+| Eliminación del secreto ficticio | Realizada |
+| Recuperación del pipeline | Aprobada |
+| Quality Gate después de las correcciones | Aprobado |
+
+Las evidencias se encuentran en GitHub Actions, en las
+ejecuciones realizadas sobre la rama
+`feature/compliace-security`.
+
+La prueba permitió comprobar que la detección de un secreto
+impide continuar con las etapas posteriores del CI.
+
+El bloqueo del despliegue en producción se encuentra
+configurado, pendiente de validación.
+
+## 4. Protección de ramas y control de despliegue
+
+### Protección de main
+
+Se configuraron reglas de protección para impedir la
+integración de cambios sin un Pull Request y sin aprobar
+los siguientes controles obligatorios:
+
+- Auditoria de seguridad.
+- build-and-test.
+- SonarCloud Code Analysis.
+
+También se deshabilitó la posibilidad de omitir las reglas
+de protección configuradas.
+
+### Despliegue controlado en producción
+
+El archivo `cd-k8s.yml` se configuró como un workflow
+reutilizable mediante `workflow_call`.
+
+El despliegue requiere:
+
+- Auditoría de seguridad aprobada.
+- Pruebas y cobertura aprobadas.
+- Quality Gate aprobado.
+- Verificación del microservicio con Docker Compose.
+- Push a la rama main.
+- Aprobación manual en el entorno production.
+
+La imagen publicada en GHCR se identifica mediante el SHA
+del commit validado y se utiliza para actualizar el
+microservicio en Kubernetes.
+
+La configuración está implementada. La aprobación manual
+y el despliegue final están pendientes de validación.
+
+## 5. Instrumentación y observabilidad (IE1)
+
+Se incorporó Spring Boot Actuator para obtener información
+sobre el estado y comportamiento del microservicio,
+integrando métricas compatibles con Prometheus.
+
+### Endpoints habilitados
+
+| Endpoint | Función |
+|---|---|
+| `/actuator/health` | Estado del servicio y sus componentes. |
+| `/actuator/info` | Información de la aplicación. |
+| `/actuator/metrics` | Consulta de métricas disponibles. |
+| `/actuator/prometheus` | Exposición de métricas para Prometheus. |
+
+### Evidencias de funcionamiento
+
+Exposición de métricas de memoria JVM, CPU, hilos,
+sesiones y registros de la aplicación.
+
+![Métricas Actuator](docs/evidencias_E3/EV1-actuator-prometheus.png)
+
+Verificación del estado del microservicio, base de datos
+H2, espacio en disco y ping, obteniendo estado UP.
+
+![Estado del servicio](docs/evidencias_E3/EV2-actuator-health.png)
+
+---
+
+## 6. Orquestación y despliegue en Kubernetes (IE2)
+
+Se implementó el despliegue del microservicio mediante
+k3s en una máquina virtual de Azure.
+
+Los manifiestos se encuentran en la carpeta `k8s/`.
+
+| Archivo | Función |
+|---|---|
+| `namespace.yaml` | Organización de recursos en streamverse. |
+| `configmap.yaml` | Variables de configuración del servicio. |
+| `deployment.yaml` | Administración de réplicas y recursos. |
+| `service.yaml` | Exposición del microservicio mediante NodePort. |
+
+### Configuración del despliegue
+
+| Parámetro | Valor |
+|---|---|
+| Namespace | streamverse |
+| Réplicas | 2 |
+| Puerto del contenedor | 8080 |
+| NodePort | 30080 |
+| Perfil de Spring Boot | prod |
+| Registro de imágenes | GitHub Container Registry |
+
+### Recursos por contenedor
+
+| Recurso | Solicitud | Límite |
+|---|---|---|
+| CPU | 150m | 500m |
+| Memoria | 256Mi | 512Mi |
+
+### Verificación de salud
+
+Se configuraron dos mecanismos de verificación:
+
+- Readiness Probe: determina si el contenedor está
+  preparado para recibir solicitudes.
+- Liveness Probe: verifica si el contenedor continúa
+  funcionando y permite su reinicio ante fallos.
+
+| Parámetro | Readiness | Liveness |
+|---|---|---|
+| Endpoint | /actuator/health/readiness | /actuator/health/liveness |
+| Espera inicial | 20 segundos | 40 segundos |
+| Intervalo | 10 segundos | 15 segundos |
+| Umbral de fallos | 3 | 3 |
+
+La configuración permite administrar la disponibilidad
+del servicio mediante dos réplicas y comprobaciones
+periódicas de salud.
+
+---
+
+## 7. Monitoreo con Prometheus y Grafana (IE3)
+
+Se incorporó Prometheus para la recolección de métricas
+y Grafana para su visualización.
+
+El archivo `monitoring/prometheus.yml` establece:
+
+- Intervalo de recolección: 15 segundos.
+- Intervalo de evaluación: 15 segundos.
+- Job: reproduccion-svc.
+- Endpoint: /actuator/prometheus.
+
+La configuración versionada utiliza un destino local
+mediante host.docker.internal:8080.
+
+El manifiesto de Kubernetes también incorpora anotaciones
+para identificar el endpoint de métricas del microservicio.
+
+### Servicios implementados
+
+Según el registro de integración del commit 2b5c0d0,
+se utilizaron los siguientes servicios:
+
+| Servicio | Puerto |
+|---|---|
+| Microservicio | 30080 |
+| Prometheus | 30090 |
+| Grafana | 30300 |
+
+Para la visualización se utilizó el dashboard JVM
+identificado con el número 4701 de Grafana, según
+el registro del mismo commit.
+
+### Panel, decisión y acción operacional
+
+| Panel o indicador | Decisión | Acción operacional |
+|---|---|---|
+| Consumo de CPU | Evaluar saturación del servicio. | Revisar límites de CPU y capacidad de procesamiento. |
+| Memoria JVM | Identificar consumo elevado de memoria. | Revisar recursos asignados al contenedor. |
+| Estado de salud | Determinar disponibilidad del servicio. | Revisar el estado de los pods y sus probes. |
+| Hilos JVM | Identificar posibles problemas de concurrencia. | Revisar registros y comportamiento de la aplicación. |
+
+Las acciones anteriores corresponden a criterios de
+respuesta operacional definidos para el monitoreo.
+No representan incidentes o intervenciones comprobadas.
+
+---
+
+## 8. Trazabilidad de la implementación
+
+Los cambios de infraestructura, observabilidad y
+seguridad quedaron registrados mediante commits y
+Pull Requests.
+
+| Pull Request | Implementación |
+|---|---|
+| #16 | Kubernetes, Azure, Actuator, Prometheus y Grafana. |
+| #17 | Sincronización de main con develop. |
+| #18 | Auditoría de seguridad e integración de controles CI/CD. |
+
+### Resultados de calidad
+
+En el Pull Request #16, SonarQube Cloud registró:
+
+- Quality Gate aprobado.
+- 0 nuevos issues.
+- 0 Security Hotspots.
+
+Las verificaciones posteriores de seguridad y calidad
+se encuentran registradas en GitHub Actions.
+
+### Alcance de las evidencias
+
+Las capturas disponibles en el repositorio permiten
+verificar la exposición local de métricas y el estado
+de salud del microservicio.
+
+El despliegue en Azure y la puesta en marcha de
+Prometheus y Grafana se encuentran registrados en
+el commit de integración 2b5c0d0.
+---
+
+## 9. Declaración de uso de IA
+
+Durante esta evaluación utilizamos ChatGPT como apoyo
+para comprender conceptos, proponer y revisar
+configuraciones, resolver errores del pipeline y
+organizar la documentación.
+
+Las configuraciones fueron implementadas y verificadas
+mediante pruebas y ejecuciones en GitHub Actions.
+
+---
+
+## 10. Reflexiones individuales
+
+### Reflexión personal - Pamela Albanese - 28/11/2026
+Al finalizar esta tercera evaluación, creo que he logrado comprender mucho mejor la importancia de DevOps dentro del desarrollo de software. Si bien en las evaluaciones anteriores me llamó mucho la atención cómo la automatización nos permitía prevenir errores, en esta oportunidad pude llevar ese aprendizaje un poco más allá, incorporando medidas de seguridad y comprobando cómo estas pueden impedir que un cambio llegue a producción.
+
+Una de las cosas que más destaco es que, durante el desarrollo de esta evaluación, nos encontramos con varios errores que tuvimos que ir comprendiendo y solucionando. Si bien esto nos tomó tiempo, considero que fue parte importante del aprendizaje, ya que no se trataba solamente de lograr que el pipeline funcionara, sino también de entender por qué fallaba.
+
+Me quedo con la importancia de no considerar la seguridad como algo que se incorpora al finalizar un proyecto, sino como algo que debe estar presente durante todo su desarrollo. También destaco nuevamente el trabajo en equipo y la coordinación que logramos mantener durante las tres evaluaciones.
+
+### Reflexión personal - Jorge Alvarez

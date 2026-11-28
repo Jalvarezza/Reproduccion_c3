@@ -20,19 +20,19 @@ jobs:
 
     steps:
       - name: Checkout del codigo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Configurar JDK 21 LTS
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
 
       - name: Compilar y verificar cobertura con JaCoCo
-        run: mvn -B clean verify
+        run: mvn -B -s .mvn/settings.xml clean verify
 
       - name: Analizar codigo con SonarQube Cloud
         env:
